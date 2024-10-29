@@ -1,5 +1,5 @@
 {
-  "name": "@package/battleship-database",
+  "name": "@repo/battleship-database",
   "version": "1.0.0",
   "exports": {
     ".": "./src/client.ts"
@@ -18,13 +18,13 @@
     "studio": "prisma studio"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.2"
+    "@prisma/client": "^5.21.1"
   },
   "devDependencies": {
-    "@package/eslint-config": "*",
-    "@package/typescript-config": "*",
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
     "eslint": "^8.57.0",
-    "prisma": "^5.10.2",
+    "prisma": "^5.21.1",
     "rimraf": "^5.0.5",
     "tsup": "^8.0.2",
     "tsx": "^4.7.1",
