@@ -1,0 +1,157 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  user_id             Int      @id @default(autoincrement())
+  created_at          DateTime @default(now())
+  last_login          DateTime?
+  username            String   @unique
+  email               String?
+  password_hash       String
+  games_played        Int      @default(0)
+  games_won           Int      @default(0)
+  games_lost          Int      @default(0)
+  games_forfeit       Int      @default(0)
+  profile_picture_url String?
+  status              Status   @default(OFFLINE)
+  Leaderboard         Leaderboard?
+  GameMoves           Move[]
+  Player1Games        Game[]   @relation("Player1Games")
+  Player2Games        Game[]   @relation("Player2Games")
+  Boards              Board[]
+  Ships               Ship[]
+  Lobbies             Lobby[]
+
+  @@map("users")
+  Game Game[]
+}
+
+model Leaderboard {
+  leaderboard_id Int      @id @default(autoincrement())
+  updated_at     DateTime @default(now())
+  user_id        Int      @unique
+  rank           Int
+  total_score    Int      @default(0)
+  total_wins     Int      @default(0)
+  total_games    Int      @default(0)
+  win_ratio      Float    @default(0)
+  User           User     @relation(fields: [user_id], references: [user_id])
+
+  @@map("leaderboards")
+}
+
+model Game {
+  game_id     Int      @id @default(autoincrement())
+  player1_id  Int
+  player2_id  Int
+  winner_id   Int?
+  start_time  DateTime @default(now())
+  end_time    DateTime?
+  Player1     User     @relation("Player1Games", fields: [player1_id], references: [user_id])
+  Player2     User     @relation("Player2Games", fields: [player2_id], references: [user_id])
+  Winner      User?    @relation(fields: [winner_id], references: [user_id])
+  GameMoves   Move[]
+  Boards      Board[]
+  GameSetting GameSetting?
+
+  @@map("games")
+  Lobby Lobby[]
+  @@index([player1_id])
+  @@index([player2_id])
+  @@index([winner_id])
+}
+
+model Move {
+  move_id     Int      @id @default(autoincrement())
+  game_id     Int
+  player_id   Int
+  coordinate_x Int
+  coordinate_y Int
+  hit         Boolean
+  timestamp   DateTime @default(now())
+  Game        Game     @relation(fields: [game_id], references: [game_id])
+  User        User     @relation(fields: [player_id], references: [user_id])
+
+  @@map("moves")
+  @@index([game_id])
+  @@index([player_id])
+}
+
+model GameSetting {
+  setting_id      Int      @id @default(autoincrement())
+  game_id         Int      @unique
+  board_size_x    Int      @default(10)
+  board_size_y    Int      @default(10)
+  max_ships       Int      @default(5)
+  turn_time_limit Int?
+  Game            Game     @relation(fields: [game_id], references: [game_id])
+
+  @@index([game_id])
+
+  @@map("game_settings")
+}
+
+model Board {
+  board_id     Int      @id @default(autoincrement())
+  game_id      Int
+  player_id    Int
+  layout       Json
+  hits         Json
+  sunk_ships   Int      @default(0)
+  Game         Game     @relation(fields: [game_id], references: [game_id])
+  User         User     @relation(fields: [player_id], references: [user_id])
+
+  @@map("boards")
+  Ship Ship[]
+  @@index([game_id])
+  @@index([player_id])
+}
+
+model Ship {
+  ship_id      Int      @id @default(autoincrement())
+  board_id     Int
+  type         ShipType
+  coordinates  Json
+  sunk         Boolean  @default(false)
+  Board        Board    @relation(fields: [board_id], references: [board_id])
+
+  @@map("ships")
+  User User[]
+  @@index([board_id])
+}
+
+model Lobby {
+  lobby_id      Int      @id @default(autoincrement())
+  host_user_id  Int
+  game_id       Int
+  player_count  Int
+  invite_code   String
+  public        Boolean  @default(true)
+  User          User     @relation(fields: [host_user_id], references: [user_id])
+  Game          Game     @relation(fields: [game_id], references: [game_id])
+
+  @@map("lobbies")
+  @@index([host_user_id])
+  @@index([game_id])
+}
+
+enum Status {
+  ONLINE
+  OFFLINE
+  IN_GAME
+}
+
+enum ShipType {
+  CARRIER
+  BATTLESHIP
+  DESTROYER
+  SUBMARINE
+  PATROL_BOAT
+}
