@@ -1,0 +1,206 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              Int      @id @default(autoincrement())
+  username        String   @unique
+  email           String   @unique
+  passwordHash    String
+  roleId          Int
+  profileColor    String
+  themePreference String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  role           Role     @relation(fields: [roleId], references: [id])
+  notes          Note[]   @relation("UserNotes")
+  revisions      NoteRevision[] @relation("UserRevisions")
+  groupMembers   GroupMember[]
+  auditLogs      AuditLog[]
+
+  @@map("users")
+  NotePermission NotePermission[]
+  Group Group[]
+  File File[]
+  @@index([roleId])
+}
+
+model Role {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String
+  permissions Permission[]
+
+  users       User[]
+  groupMembers GroupMember[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String
+  groupId     Int?
+
+  group       PermissionGroup? @relation(fields: [groupId], references: [id])
+
+  @@map("permissions")
+  Role Role[]
+  @@index([groupId])
+}
+
+model PermissionGroup {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  permissions Permission[]
+
+  @@map("permission_groups")
+}
+
+model Note {
+  id          Int       @id @default(autoincrement())
+  title       String
+  content     String
+  ownerId     Int
+  parentNoteId Int?      // Allows for parent-child relationships
+  isShared    Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  owner       User       @relation("UserNotes", fields: [ownerId], references: [id])
+  parentNote  Note?      @relation("ParentChildNotes", fields: [parentNoteId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  childNotes  Note[]     @relation("ParentChildNotes")
+
+  revisions   NoteRevision[]
+  permissions NotePermission[]
+
+  @@map("notes")
+  @@index([parentNoteId])
+  @@index([ownerId])
+}
+
+model NoteRevision {
+  id              Int       @id @default(autoincrement())
+  noteId          Int
+  revisedById     Int
+  content         String
+  title           String
+  revisionTimestamp DateTime @default(now())
+  notes           String?
+
+  note            Note      @relation(fields: [noteId], references: [id])
+  revisedBy       User      @relation("UserRevisions", fields: [revisedById], references: [id])
+
+  @@map("note_revisions")
+  @@index([noteId])
+  @@index([revisedById])
+}
+
+model NotePermission {
+  id          Int    @id @default(autoincrement())
+  noteId      Int
+  userId      Int
+  permissions String // Could be a JSON or a comma-separated string of permissions
+
+  note        Note   @relation(fields: [noteId], references: [id])
+  user        User   @relation(fields: [userId], references: [id])
+
+  @@map("note_permissions")
+  @@index([noteId])
+  @@index([userId])
+}
+
+model Group {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  description String
+  ownerId     Int
+
+  owner       User         @relation(fields: [ownerId], references: [id])
+  members     GroupMember[]
+
+  @@map("groups")
+  @@index([ownerId])
+}
+
+model GroupMember {
+  id          Int    @id @default(autoincrement())
+  groupId     Int
+  userId      Int
+  roleId      Int
+
+  group       Group  @relation(fields: [groupId], references: [id])
+  user        User   @relation(fields: [userId], references: [id])
+  role        Role   @relation(fields: [roleId], references: [id])
+
+  @@map("group_members")
+  @@index([groupId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+model File {
+  id          Int       @id @default(autoincrement())
+  name        String
+  fileType    String
+  filePath    String
+  ownerId     Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  owner       User      @relation(fields: [ownerId], references: [id])
+
+  @@map("files")
+  @@index([ownerId])
+}
+
+model Setting {
+  id          Int       @id @default(autoincrement())
+  key         String    @unique
+  value       String
+  description String
+
+  @@map("settings")
+}
+
+model Theme {
+  id            Int     @id @default(autoincrement())
+  name          String  @unique
+  primaryColor  String
+  secondaryColor String
+  backgroundColor String
+  textColor     String
+
+  @@map("themes")
+}
+
+model Plugin {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String
+  isEnabled   Boolean   @default(false)
+  settings    String?   // Could be JSON or a string of key-value pairs
+
+  @@map("plugins")
+}
+
+model AuditLog {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  action      String
+  timestamp   DateTime  @default(now())
+  details     String?
+
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+  @@index([userId])
+}
