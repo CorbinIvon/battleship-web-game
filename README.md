@@ -2,6 +2,12 @@
 
 #todo: https://vercel.com/guides/nextjs-prisma-postgres
 
+# Quickstart
+
+```sh
+npm install next --save-dev
+```
+
 # Turborepo starter
 
 This is an official starter Turborepo.

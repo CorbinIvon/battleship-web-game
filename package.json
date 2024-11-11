@@ -4,10 +4,12 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
+    "dev-windows": "turbo dev-windows",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
+    "next": "^15.0.3",
     "prettier": "^3.3.3",
     "turbo": "^2.2.3",
     "typescript": "5.5.4"
